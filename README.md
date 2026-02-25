@@ -32,7 +32,6 @@ Since the playbook uses the `dnf` package manager, it requires administrative pr
 3. Run the playbook with the "Ask for become password" flag (`-K`):
 ```bash
 ansible-playbook setup-workstation.yml -K
-
 ```
 
 
@@ -43,11 +42,11 @@ ansible-playbook setup-workstation.yml -K
 Some configurations are best done interactively or are specific to your personal IDE profile. Once the playbook finishes successfully, complete these final manual steps:
 
 **1. Generate GitHub SSH Keys**
+
 To push and pull from GitHub without password prompts, generate an SSH key:
 
 ```bash
 ssh-keygen -t ed25519 -C "your_email@example.com"
-
 ```
 
 Output the key using `cat ~/.ssh/id_ed25519.pub` and add it to your GitHub account under **Settings > SSH and GPG keys**.
@@ -57,11 +56,3 @@ Output the key using `cat ~/.ssh/id_ed25519.pub` and add it to your GitHub accou
 * Open IntelliJ IDEA and go to **File > Settings > Plugins**.
 * Search for and install **Ansible Lint** (for standard YAML/Ansible linting).
 * Search for and install **Launch in Cursor** (or "Open in Cursor"). This allows you to right-click any playbook in IntelliJ and instantly jump into Cursor for AI generation.
-
-```
-
-***
-
-Would you like me to write out the `bootstrap.sh` bash script we discussed earlier, so you can commit it right next to this README in your repository?
-
-```
