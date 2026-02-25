@@ -1,0 +1,77 @@
+---
+- name: Configure Fedora Workstation for Ansible & Cursor
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars:
+    # Use the running user's home directory (prevents dumping files into /root if run with sudo)
+    user_home: "{{ lookup('env', 'HOME') }}"
+    app_dir: "{{ user_home }}/Applications"
+    cursor_api_url: "https://www.cursor.com/api/download?platform=linux-x64&releaseTrack=stable"
+    cursor_appimage: "{{ app_dir }}/cursor.AppImage"
+
+  tasks:
+    - name: Update DNF cache and install core packages (Git, Ansible, linters)
+      become: yes
+      ansible.builtin.dnf:
+        name:
+          - git
+          - ansible
+          - ansible-lint
+          - wget
+          - curl
+          - fuse # Often required for AppImages to run correctly
+        state: present
+        update_cache: yes
+
+    - name: Ensure local Applications directory exists
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Fetch latest Cursor download metadata from API
+      ansible.builtin.uri:
+        url: "{{ cursor_api_url }}"
+        method: GET
+        return_content: yes
+        headers:
+          User-Agent: "Mozilla/5.0 (X11; Linux x86_64)"
+      register: cursor_metadata
+
+    - name: Download Cursor AppImage
+      ansible.builtin.get_url:
+        # The API returns either 'downloadUrl' or 'url', this catches both
+        url: "{{ cursor_metadata.json.downloadUrl | default(cursor_metadata.json.url) }}"
+        dest: "{{ cursor_appimage }}"
+        mode: '0755'
+        headers:
+          User-Agent: "Mozilla/5.0 (X11; Linux x86_64)"
+
+    - name: Ensure local applications directory exists for desktop shortcuts
+      ansible.builtin.file:
+        path: "{{ user_home }}/.local/share/applications"
+        state: directory
+        mode: '0755'
+
+    - name: Create desktop shortcut for Cursor
+      ansible.builtin.copy:
+        dest: "{{ user_home }}/.local/share/applications/cursor.desktop"
+        content: |
+          [Desktop Entry]
+          Name=Cursor
+          Comment=AI-first code editor
+          Exec={{ cursor_appimage }} %U
+          Terminal=false
+          Type=Application
+          Icon=code
+          Categories=Development;IDE;
+        mode: '0644'
+
+    - name: Display post-installation instructions
+      ansible.builtin.debug:
+        msg:
+          - "Setup complete!"
+          - "1. You can now launch Cursor from your Fedora app menu."
+          - "2. Don't forget to generate your SSH keys manually using 'ssh-keygen'."
+          - "3. Install the 'Launch in Cursor' plugin directly inside IntelliJ IDEA."
